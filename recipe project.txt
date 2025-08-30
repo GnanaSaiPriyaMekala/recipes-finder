@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Taylor's Global Recipe Finder</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+    .hero { 
+      background: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80') no-repeat center center/cover; 
+      height: 100vh; display: flex; justify-content: center; align-items: center; 
+      color: white; text-align: center; flex-direction: column; position: relative; 
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+    .hero-content { position: relative; z-index: 1; animation: fadeIn 1.5s ease-in; }
+    .hero h1 { font-size: 3rem; margin-bottom: 10px; animation: slideDown 1s ease-out; }
+    .hero p { font-size: 1.5rem; margin-bottom: 20px; }
+    .search-bar { padding: 10px; width: 300px; border-radius: 20px; border: none; font-size: 1rem; transition: transform 0.3s; }
+    .search-bar:focus { transform: scale(1.05); outline: none; }
+    .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 20px; }
+    .card { background: white; border-radius: 10px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden; text-align: center; display: flex; flex-direction: column; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-5px); }
+    .card img { width: 100%; height: 150px; object-fit: cover; }
+    .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .card h3 { font-size: 1.2rem; margin: 10px 0; }
+    .card button { background: #ff7043; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
+    .card button:hover { background: #e65c2c; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 80%; max-width: 600px; max-height: 80%; overflow-y: auto; position: relative; }
+    .modal-content img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; }
+    .modal-content h2 { font-size: 1.5rem; margin-top: 10px; }
+    .modal-content ul, .modal-content ol { padding-left: 20px; }
+    .modal-content li { margin: 5px 0; }
+    .close { position: absolute; top: 10px; right: 10px; font-size: 2rem; cursor: pointer; color: #333; }
+    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+    @keyframes slideDown { from {transform: translateY(-50px);} to {transform: translateY(0);} }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-content">
+      <h1>Taylor's Global Recipe Finder</h1>
+      <p>Discover recipes by ingredient, cuisine, or country</p>
+      <input id="searchInput" class="search-bar" type="text" placeholder="Search recipes...">
+      <p style="margin-top:10px;font-size:1rem;">Find famous dishes from India, Italy, Japan, USA, Mexico, Turkey & more!</p>
+    </div>
+  </div>
+
+  <div id="results" class="results"></div>
+
+  <div id="recipeModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <img id="modalImage" src="" alt="Recipe Image">
+      <h2 id="modalTitle"></h2>
+      <h3>Ingredients</h3>
+      <ul id="modalIngredients"></ul>
+      <h3>Instructions</h3>
+      <ol id="modalInstructions"></ol>
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const resultsDiv = document.getElementById('results');
+    const modal = document.getElementById('recipeModal');
+    const closeModal = document.getElementById('closeModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalIngredients = document.getElementById('modalIngredients');
+    const modalInstructions = document.getElementById('modalInstructions');
+
+    const customRecipes = [
+      { title: "Hyderabadi Biryani", image: "https://www.indianhealthyrecipes.com/wp-content/uploads/2021/12/hyderabadi-biryani-recipe.jpg", ingredients: ["Basmati Rice","Chicken","Onions","Spices","Curd"], instructions: ["Marinate chicken","Cook rice","Layer and cook on dum"] },
+      { title: "Margarita Pizza", image: "https://images.unsplash.com/photo-1601924578224-22e9dfc4c26b?auto=format&fit=crop&w=800&q=80", ingredients: ["Pizza Dough","Tomato Sauce","Cheese","Basil"], instructions: ["Prepare dough","Add sauce and toppings","Bake 15 mins"] }
+    ];
+
+    const countryRecipes = {
+      india: [
+        { title: "Butter Chicken", image: "https://www.indianhealthyrecipes.com/wp-content/uploads/2021/05/butter-chicken.jpg", ingredients: ["Chicken","Butter","Cream","Tomatoes","Spices"], instructions: ["Marinate chicken","Cook in sauce","Serve hot"] }
+      ],
+      italy: [
+        { title: "Spaghetti Carbonara", image: "https://www.simplyrecipes.com/thmb/q2MGNIZfWk1yTQhuavV1JzC32-I=/960x0/filters:no_upscale():max_bytes(150000):strip_icc()/Simply-Recipes-Spaghetti-Carbonara-LEAD-5-5d6e9a3924e5469b8ccdb7c5cc218f40.jpg", ingredients: ["Spaghetti","Eggs","Parmesan","Pancetta"], instructions: ["Boil pasta","Cook pancetta","Mix with eggs and cheese"] }
+      ]
+    };
+
+    searchInput.addEventListener('keypress', function(e){
+      if(e.key === 'Enter'){
+        const query = searchInput.value.trim().toLowerCase();
+        if(query) searchRecipes(query);
+      }
+    });
+
+    async function searchRecipes(query){
+      resultsDiv.innerHTML = '<p>Searching recipes...</p>';
+      let apiRecipes = [];
+      try{
+        const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`);
+        const data = await res.json();
+        if(data.meals){
+          apiRecipes = data.meals.map(meal=>({
+            title: meal.strMeal,
+            image: meal.strMealThumb,
+            ingredients: Object.keys(meal).filter(k=>k.startsWith('strIngredient') && meal[k])
+                          .map((k,i)=>meal[k]+' - '+meal['strMeasure'+(i+1)]),
+            instructions: meal.strInstructions.split('. ').filter(Boolean)
+          }));
+        }
+      }catch(err){ console.error(err); }
+
+      const countryFallback = countryRecipes[query] || [];
+      const ingredientFallback = customRecipes.filter(r=>r.title.toLowerCase().includes(query));
+      const allResults = [...apiRecipes, ...countryFallback, ...ingredientFallback];
+
+      if(allResults.length === 0){
+        resultsDiv.innerHTML = '<p>No recipes found. Try another search!</p>';
+        return;
+      }
+
+      resultsDiv.innerHTML = '';
+      allResults.forEach(recipe=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${recipe.image}" alt="${recipe.title}">
+          <div class="card-body">
+            <h3>${recipe.title}</h3>
+            <button>View Recipe</button>
+          </div>
+        `;
+        card.querySelector('button').addEventListener('click', ()=>showRecipe(recipe));
+        resultsDiv.appendChild(card);
+      });
+    }
+
+    function showRecipe(recipe){
+      modalImage.src = recipe.image;
+      modalTitle.textContent = recipe.title;
+      modalIngredients.innerHTML = recipe.ingredients.map(i=>`<li>${i}</li>`).join('');
+      modalInstructions.innerHTML = recipe.instructions.map(i=>`<li>${i}</li>`).join('');
+      modal.style.display = 'flex';
+    }
+
+    closeModal.onclick = ()=>modal.style.display='none';
+    window.onclick = e=>{ if(e.target===modal) modal.style.display='none'; };
+  </script>
+</body>
+</html>
